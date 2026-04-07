@@ -1,17 +1,26 @@
-//===----------------------------------------------------------------------===//
-//
-// Part of libcu++, the C++ Standard Library for your entire system,
-// under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
-//
-//===----------------------------------------------------------------------===//
+/******************************************************************************
+ * Copyright (c) 2026 Xiong Shengwu Group at Wuhan University of Technology. All Rights Reserved.
+ * Author: Zhenyu Jiang <2786369597@qq.com>
+ * Create: 2026-01-23
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *****************************************************************************/
+
 
 #ifndef LIBASCENDCXX_INCLUDE_ASCEND_STD___ACCL_OS_H_  // NOLINT(build/header_guard)
 #define LIBASCENDCXX_INCLUDE_ASCEND_STD___ACCL_OS_H_
 
-// The header provides the following macros to determine the host architecture:
+// The header provides the following macros to determine the host OS and its presence:
 //
 // _ACCL_OS(WINDOWS)
 // _ACCL_OS(LINUX)
@@ -20,7 +29,7 @@
 // _ACCL_OS(APPLE)
 // _ACCL_OS(HARMONY)
 
-// Determine the host compiler and its version
+// Determine the host OS and its presence
 #if defined(_WIN32) || defined(_WIN64) /* _WIN64 for NVRTC */
 #define _ACCL_OS_WINDOWS_() 1
 #else
@@ -49,6 +58,12 @@
 #define _ACCL_OS_APPLE_() 1
 #else
 #define _ACCL_OS_APPLE_() 0
+#endif
+
+#if defined(__OHOS__) || defined(__OPENHARMONY__)
+#define _ACCL_OS_HARMONY_() 1
+#else
+#define _ACCL_OS_HARMONY_() 0
 #endif
 
 #define _ACCL_OS(...) _ACCL_OS_##__VA_ARGS__##_()

@@ -44,14 +44,10 @@ def insert_harmony_block(text: str, rules: dict) -> str:
     if "_ACCL_OS_HARMONY_()" in text:
         return text
 
-    qnx_anchor = """#if defined(__QNX__) || defined(__QNXNTO__)
-#define _ACCL_OS_QNX_() 1
-#else
-#define _ACCL_OS_QNX_() 0
-#endif"""
+    anchor = "#define _ACCL_OS(...) _ACCL_OS_##__VA_ARGS__##_()"
 
-    if qnx_anchor in text:
-        text = text.replace(qnx_anchor, harmony_block.strip() + "\n\n" + qnx_anchor)
+    if anchor in text:
+        text = text.replace(anchor, harmony_block.strip() + "\n\n" + anchor, 1)
 
     return text
 
@@ -83,12 +79,23 @@ def replace_file_header(text: str) -> str:
  *****************************************************************************/
 """
 
-    return re.sub(
-        r"//===-+.*?//===-+==\n\n",
-        accl_header + "\n",
-        text,
-        flags=re.DOTALL,
+    guard_pos = text.find("#ifndef")
+    if guard_pos == -1:
+        return text
+
+    return accl_header + "\n\n" + text[guard_pos:]
+
+
+def replace_comment_phrases(text: str) -> str:
+    text = text.replace(
+        "// The header provides the following macros to determine the host architecture:",
+        "// The header provides the following macros to determine the host OS and its presence:",
     )
+    text = text.replace(
+        "// Determine the host compiler and its version",
+        "// Determine the host OS and its presence",
+    )
+    return text
 
 
 def apply_os_h_rules(source_text: str, rules: dict) -> str:
@@ -106,6 +113,7 @@ def apply_os_h_rules(source_text: str, rules: dict) -> str:
     result = apply_text_replacements(result, rules)
     result = insert_comment_lines(result, rules)
     result = insert_harmony_block(result, rules)
+    result = replace_comment_phrases(result)
     result = normalize_format(result)
 
     return result
