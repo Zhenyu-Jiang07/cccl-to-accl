@@ -1,0 +1,34 @@
+file_type: os_h
+description: rewrite rules for migrating CCCL os.h to ACCL os.h
+
+header_guard:
+  from: "__CCCL_OS_H"
+  to: "LIBASCENDCXX_INCLUDE_ASCEND_STD___ACCL_OS_H_"
+
+macro_prefix_replacements:
+  - from: "_CCCL_OS_"
+    to: "_ACCL_OS_"
+  - from: "_CCCL_OS("
+    to: "_ACCL_OS("
+  - from: "_CCCL_OS..."
+    to: "_ACCL_OS..."
+
+text_replacements:
+  - from: "_CCCL_OS("
+    to: "_ACCL_OS("
+  - from: "_CCCL_OS_"
+    to: "_ACCL_OS_"
+  - from: "_CCCL_OS(...) _CCCL_OS_##__VA_ARGS__##_()"
+    to: "_ACCL_OS(...) _ACCL_OS_##__VA_ARGS__##_()"
+
+insert_after_lines:
+  - after: "// _ACCL_OS(QNX)"
+    content: "// _ACCL_OS(APPLE)\n// _ACCL_OS(HARMONY)"
+
+extra_blocks:
+  harmony_block: |
+    #if defined(__OHOS__) || defined(__OPENHARMONY__)
+    #define _ACCL_OS_HARMONY_() 1
+    #else
+    #define _ACCL_OS_HARMONY_() 0
+    #endif
