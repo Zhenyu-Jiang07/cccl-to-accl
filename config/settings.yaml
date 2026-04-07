@@ -1,0 +1,24 @@
+project:
+  name: cccl-to-accl
+  mode: os_h_mvp
+
+paths:
+  mylearn_repo: /home/zhenyu/projects/mylearn
+  source_file: examples/input_cccl_os.h
+  expected_file: examples/expected_accl_os.h
+  target_relpath: libascendcxx/include/ascend/std/__accl/os.h
+  output_dir: outputs
+
+build:
+  mode: host
+  conda_env: asc_cccl_env
+  workdir: libascendcxx
+  setup_script: 000_set_env.sh
+  build_script: 002_only_make_host.sh
+
+retry:
+  max_fix_rounds: 1
+
+model:
+  provider: zai
+  model_name: glm-5
