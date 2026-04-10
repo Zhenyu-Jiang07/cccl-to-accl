@@ -14,6 +14,7 @@ repo_verify:
   branch_prefix: feature/ai
   push_remote: origin
   commit_message_template: "add {filename}"
+  base_branch: develop
 
 retry:
   max_fix_rounds: 1

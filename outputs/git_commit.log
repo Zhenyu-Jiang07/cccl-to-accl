@@ -1,5 +1,5 @@
-[feature/ai-os-20260410-084739 d17c6e5] add os.h
- 1 file changed, 9 insertions(+), 9 deletions(-)
+[feature/ai-os-20260410-101946 e5dd63d] add os.h
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 Add Apache 2.0 license header............................................Passed
 CANN code style check (clang-format + cpplint)...........................Passed

@@ -48,12 +48,16 @@ def save_text(project_root: Path, filename: str, content: str) -> Path:
 def checkout_new_branch(settings: dict, branch_name: str):
     repo = settings["paths"]["mylearn_repo"]
     conda_env = settings["repo_verify"]["conda_env"]
+    remote = settings["repo_verify"]["push_remote"]
+    base_branch = settings["repo_verify"]["base_branch"]
 
     command = f"""
+set -e
 source "{CONDA_SH}"
 conda activate {conda_env}
 cd "{repo}"
-git checkout -b "{branch_name}"
+git fetch "{remote}" "{base_branch}"
+git checkout -b "{branch_name}" "{remote}/{base_branch}"
 """
     return run_bash_command(command, capture=True)
 
@@ -103,7 +107,7 @@ git commit -s -m "{commit_message}"
     return run_bash_command(command, capture=True)
 
 
-def check_commit_passed(commit_output: str) -> tuple[bool, bool]:
+def check_commit_passed(commit_output: str):
     license_passed = bool(
         re.search(r"Add Apache 2\.0 license header.*Passed", commit_output)
     )
@@ -124,20 +128,27 @@ conda activate {conda_env}
 cd "{repo}"
 git push {remote} "{branch_name}"
 """
-    # push 可能要求输入用户名/密码或 token，这里不捕获输出，让终端直接显示
     return run_bash_command(command, capture=False)
 
 
-def main():
-    project_root = Path(__file__).resolve().parent.parent
-    settings = load_settings(project_root / "config" / "settings.yaml")
-
+def run_repo_verify_pipeline(project_root: Path, settings: dict) -> dict:
     target_filename = Path(settings["paths"]["target_relpath"]).name
     branch_name = build_branch_name(settings["repo_verify"]["branch_prefix"], target_filename)
     commit_message = build_commit_message(
         settings["repo_verify"]["commit_message_template"],
         target_filename,
     )
+
+    result_info = {
+        "branch_name": branch_name,
+        "target_filename": target_filename,
+        "checkout_ok": False,
+        "format_ok": False,
+        "commit_ok": False,
+        "license_passed": False,
+        "style_passed": False,
+        "push_ok": False,
+    }
 
     print(f"准备创建分支: {branch_name}")
     branch_result = checkout_new_branch(settings, branch_name)
@@ -149,8 +160,9 @@ def main():
         print("创建分支失败")
         print(f"checkout 日志已保存到: {branch_log_path}")
         print(branch_log)
-        return
+        return result_info
 
+    result_info["checkout_ok"] = True
     print("分支创建成功")
     print(f"checkout 日志已保存到: {branch_log_path}")
 
@@ -166,8 +178,9 @@ def main():
     if format_result.returncode != 0:
         print("clang-format 执行失败")
         print(format_log)
-        return
+        return result_info
 
+    result_info["format_ok"] = True
     print("clang-format 执行成功")
 
     commit_result = git_add_and_commit(settings, commit_message)
@@ -177,17 +190,22 @@ def main():
     print(f"commit 日志已保存到: {commit_log_path}")
 
     license_passed, style_passed = check_commit_passed(commit_log)
+    result_info["license_passed"] = license_passed
+    result_info["style_passed"] = style_passed
+
     print(f"Add Apache 2.0 license header Passed: {license_passed}")
     print(f"CANN code style check Passed: {style_passed}")
 
     if commit_result.returncode != 0:
         print("git commit 失败")
         print(commit_log)
-        return
+        return result_info
+
+    result_info["commit_ok"] = True
 
     if not (license_passed and style_passed):
         print("本地 hook 检查未全部通过，停止 push")
-        return
+        return result_info
 
     print("本地 hook 检查全部通过，开始 push...")
     push_result = git_push(settings, branch_name)
@@ -200,11 +218,19 @@ def main():
     )
 
     if push_result.returncode == 0:
+        result_info["push_ok"] = True
         print(f"push 成功，分支已上传: {branch_name}")
     else:
         print(f"push 失败，分支名: {branch_name}")
 
     print(f"push 状态日志已保存到: {push_status_path}")
+    return result_info
+
+
+def main():
+    project_root = Path(__file__).resolve().parent.parent
+    settings = load_settings(project_root / "config" / "settings.yaml")
+    run_repo_verify_pipeline(project_root, settings)
 
 
 if __name__ == "__main__":

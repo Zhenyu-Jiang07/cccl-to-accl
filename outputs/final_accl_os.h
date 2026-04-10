@@ -48,6 +48,12 @@
 #define _ACCL_OS_ANDROID_() 0
 #endif
 
+#if defined(__OHOS__) || defined(__OPENHARMONY__)
+#define _ACCL_OS_HARMONY_() 1
+#else
+#define _ACCL_OS_HARMONY_() 0
+#endif
+
 #if defined(__QNX__) || defined(__QNXNTO__)
 #define _ACCL_OS_QNX_() 1
 #else
@@ -58,12 +64,6 @@
 #define _ACCL_OS_APPLE_() 1
 #else
 #define _ACCL_OS_APPLE_() 0
-#endif
-
-#if defined(__OHOS__) || defined(__OPENHARMONY__)
-#define _ACCL_OS_HARMONY_() 1
-#else
-#define _ACCL_OS_HARMONY_() 0
 #endif
 
 #define _ACCL_OS(...) _ACCL_OS_##__VA_ARGS__##_()

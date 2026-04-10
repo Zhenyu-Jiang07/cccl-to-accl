@@ -89,11 +89,15 @@ def replace_file_header(text: str) -> str:
 def replace_comment_phrases(text: str) -> str:
     text = text.replace(
         "// The header provides the following macros to determine the host architecture:",
-        "// The header provides the following macros to determine the host OS and its presence:",
+        "// The header provides the following macros to determine the host OS:",
     )
     text = text.replace(
         "// Determine the host compiler and its version",
+        "// Determine the host OS",
+    )
+    text = text.replace(
         "// Determine the host OS and its presence",
+        "// Determine the host OS",
     )
     return text
 
@@ -102,13 +106,11 @@ def apply_os_h_rules(source_text: str, rules: dict) -> str:
     result = source_text
 
     result = replace_file_header(result)
-
     result = replace_header_guard(
         result,
         rules["header_guard"]["from"],
         rules["header_guard"]["to"],
     )
-
     result = replace_macro_prefixes(result, rules)
     result = apply_text_replacements(result, rules)
     result = insert_comment_lines(result, rules)
@@ -119,20 +121,24 @@ def apply_os_h_rules(source_text: str, rules: dict) -> str:
     return result
 
 
-def main():
-    project_root = Path(__file__).resolve().parent.parent
-    source_path = project_root / "examples" / "input_cccl_os.h"
-    rule_path = project_root / "skills" / "cccl-to-accl-rewrite" / "rules" / "os_h_rules.yaml"
-    output_path = project_root / "outputs" / "candidate_accl_os.h"
-
+def generate_candidate_from_os_h(source_path: Path, rule_path: Path, output_path: Path) -> Path:
     source_text = source_path.read_text(encoding="utf-8")
     rules = load_rules(rule_path)
     result = apply_os_h_rules(source_text, rules)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(result, encoding="utf-8")
+    return output_path
 
-    print(f"候选文件已生成: {output_path}")
+
+def main():
+    project_root = Path(__file__).resolve().parent.parent
+    source_path = project_root / "examples" / "input_cccl_os.h"
+    rule_path = project_root / "skills" / "cccl-to-accl-rewrite" / "rules" / "os_h_rules.yaml"
+    output_path = project_root / "outputs" / "candidate_accl_os.h"
+
+    result_path = generate_candidate_from_os_h(source_path, rule_path, output_path)
+    print(f"候选文件已生成: {result_path}")
 
 
 if __name__ == "__main__":

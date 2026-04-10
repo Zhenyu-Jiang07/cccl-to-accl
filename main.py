@@ -2,9 +2,13 @@ from pathlib import Path
 import os
 import re
 import yaml
+import argparse
 from dotenv import load_dotenv
 
 from zai import ZhipuAiClient
+from scripts.classify_file import classify_file
+from scripts.apply_rules import generate_candidate_from_os_h
+from scripts.repo_verify import run_repo_verify_pipeline
 
 
 def load_settings(settings_path: Path) -> dict:
@@ -12,12 +16,7 @@ def load_settings(settings_path: Path) -> dict:
         return yaml.safe_load(f)
 
 
-def extract_sections(model_output: str) -> tuple[str, str]:
-    """
-    从模型输出中提取：
-    1. 目标文件内容
-    2. 改写说明
-    """
+def extract_sections(model_output: str):
     file_content = ""
     notes = ""
 
@@ -39,49 +38,50 @@ def extract_sections(model_output: str) -> tuple[str, str]:
 
     return file_content, notes
 
+
 def normalize_generated_os_text(text: str) -> str:
-    """
-    对模型生成的 os.h 做轻量归一化：
-    1. 去掉开头多余空行
-    2. 统一预处理指令缩进
-    3. 保证文件末尾有换行
-    """
-    # 去掉开头多余空行
-    text = text.lstrip("\n")
-
-    # 统一预处理指令格式
-    text = re.sub(r"#\s{2,}define", "#define", text)
-    text = re.sub(r"#\s{2,}else", "#else", text)
-    text = re.sub(r"#\s{2,}endif", "#endif", text)
-
-    # 保证文件末尾有且仅有一个换行
+    text = text.lstrip()
+    text = re.sub(r"^#\s+define", "#define", text, flags=re.MULTILINE)
+    text = re.sub(r"^#\s+else", "#else", text, flags=re.MULTILINE)
+    text = re.sub(r"^#\s+endif", "#endif", text, flags=re.MULTILINE)
     text = text.rstrip() + "\n"
-
     return text
 
-def main():
-    load_dotenv()
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="CCCL -> ACCL migration prototype")
+    parser.add_argument("--input", required=True, help="待迁移的 CCCL 文件路径")
+    parser.add_argument(
+        "--repo-verify",
+        action="store_true",
+        help="如果输入文件已支持完整流程，则继续执行 repo verify（创建分支、commit、push）",
+    )
+    return parser.parse_args()
+
+
+def save_text(path: Path, content: str):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
+def run_os_h_full_pipeline(project_root: Path, settings: dict, input_path: Path, do_repo_verify: bool):
     api_key = os.getenv("ZHIPU_API_KEY")
     if not api_key:
         raise ValueError("未读取到 ZHIPU_API_KEY，请检查 .env 文件")
 
-    project_root = Path(__file__).resolve().parent
-    settings = load_settings(project_root / "config" / "settings.yaml")
-
-    source_path = project_root / settings["paths"]["source_file"]
     expected_path = project_root / settings["paths"]["expected_file"]
-    candidate_path = project_root / settings["paths"]["output_dir"] / "candidate_accl_os.h"
     prompt_path = project_root / "skills" / "cccl-to-accl-rewrite" / "prompts" / "rewrite_prompt.md"
+    rule_path = project_root / "skills" / "cccl-to-accl-rewrite" / "rules" / "os_h_rules.yaml"
+    candidate_path = project_root / settings["paths"]["output_dir"] / "candidate_accl_os.h"
 
-    if not source_path.exists():
-        raise FileNotFoundError(f"找不到原始输入文件: {source_path}")
+    if not input_path.exists():
+        raise FileNotFoundError(f"找不到输入文件: {input_path}")
     if not expected_path.exists():
         raise FileNotFoundError(f"找不到参考目标文件: {expected_path}")
-    if not candidate_path.exists():
-        raise FileNotFoundError(f"找不到规则生成的候选文件: {candidate_path}")
 
-    source_text = source_path.read_text(encoding="utf-8")
+    generate_candidate_from_os_h(input_path, rule_path, candidate_path)
+
+    source_text = input_path.read_text(encoding="utf-8")
     expected_text = expected_path.read_text(encoding="utf-8")
     candidate_text = candidate_path.read_text(encoding="utf-8")
     prompt_text = prompt_path.read_text(encoding="utf-8")
@@ -110,7 +110,6 @@ def main():
     )
 
     model_output = response.choices[0].message.content
-
     final_file_text, rewrite_notes = extract_sections(model_output)
 
     if not final_file_text:
@@ -119,19 +118,51 @@ def main():
     final_file_text = normalize_generated_os_text(final_file_text)
 
     output_dir = project_root / settings["paths"]["output_dir"]
-    output_dir.mkdir(parents=True, exist_ok=True)
+    save_text(output_dir / "final_accl_os.h", final_file_text)
+    save_text(output_dir / "rewrite_notes.md", rewrite_notes)
+    save_text(output_dir / "rewrite_raw_output.md", model_output)
 
-    final_file_path = output_dir / "final_accl_os.h"
-    notes_path = output_dir / "rewrite_notes.md"
-    raw_output_path = output_dir / "rewrite_raw_output.md"
+    print("已完成 os.h 全流程改写：")
+    print(f"- candidate: {output_dir / 'candidate_accl_os.h'}")
+    print(f"- final: {output_dir / 'final_accl_os.h'}")
+    print(f"- notes: {output_dir / 'rewrite_notes.md'}")
 
-    final_file_path.write_text(final_file_text, encoding="utf-8")
-    notes_path.write_text(rewrite_notes, encoding="utf-8")
-    raw_output_path.write_text(model_output, encoding="utf-8")
+    if do_repo_verify:
+        print("\n开始执行 repo verify...")
+        verify_result = run_repo_verify_pipeline(project_root, settings)
 
-    print(f"最终目标文件已保存到: {final_file_path}")
-    print(f"改写说明已保存到: {notes_path}")
-    print(f"原始模型输出已保存到: {raw_output_path}")
+        print("\n=== repo verify 结果 ===")
+        for k, v in verify_result.items():
+            print(f"{k}: {v}")
+
+
+def main():
+    load_dotenv()
+    args = parse_args()
+
+    project_root = Path(__file__).resolve().parent
+    settings = load_settings(project_root / "config" / "settings.yaml")
+
+    input_path = Path(args.input).resolve()
+    if not input_path.exists():
+        raise FileNotFoundError(f"输入文件不存在: {input_path}")
+
+    content = input_path.read_text(encoding="utf-8")
+    classification = classify_file(str(input_path), content)
+
+    output_dir = project_root / settings["paths"]["output_dir"]
+    save_text(output_dir / "classification_result.md", "\n".join(f"{k}: {v}" for k, v in classification.items()))
+
+    print("=== 文件分类结果 ===")
+    for k, v in classification.items():
+        print(f"{k}: {v}")
+
+    if classification["support_level"] == "full" and classification["file_type"] == "os_h":
+        run_os_h_full_pipeline(project_root, settings, input_path, args.repo_verify)
+    else:
+        print("\n当前文件尚未接入完整自动迁移流程。")
+        print("当前系统已完成：分类与支持状态判定。")
+        print("后续可扩展为：分析模式 / 候选改写模式 / 全自动验证模式。")
 
 
 if __name__ == "__main__":

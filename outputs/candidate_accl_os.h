@@ -20,7 +20,7 @@
 #ifndef LIBASCENDCXX_INCLUDE_ASCEND_STD___ACCL_OS_H_  // NOLINT(build/header_guard)
 #define LIBASCENDCXX_INCLUDE_ASCEND_STD___ACCL_OS_H_
 
-// The header provides the following macros to determine the host OS and its presence:
+// The header provides the following macros to determine the host OS:
 //
 // _ACCL_OS(WINDOWS)
 // _ACCL_OS(LINUX)
@@ -29,7 +29,7 @@
 // _ACCL_OS(APPLE)
 // _ACCL_OS(HARMONY)
 
-// Determine the host OS and its presence
+// Determine the host OS
 #if defined(_WIN32) || defined(_WIN64) /* _WIN64 for NVRTC */
 #define _ACCL_OS_WINDOWS_() 1
 #else
