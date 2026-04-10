@@ -39,6 +39,25 @@ def extract_sections(model_output: str) -> tuple[str, str]:
 
     return file_content, notes
 
+def normalize_generated_os_text(text: str) -> str:
+    """
+    对模型生成的 os.h 做轻量归一化：
+    1. 去掉开头多余空行
+    2. 统一预处理指令缩进
+    3. 保证文件末尾有换行
+    """
+    # 去掉开头多余空行
+    text = text.lstrip("\n")
+
+    # 统一预处理指令格式
+    text = re.sub(r"#\s{2,}define", "#define", text)
+    text = re.sub(r"#\s{2,}else", "#else", text)
+    text = re.sub(r"#\s{2,}endif", "#endif", text)
+
+    # 保证文件末尾有且仅有一个换行
+    text = text.rstrip() + "\n"
+
+    return text
 
 def main():
     load_dotenv()
@@ -96,6 +115,8 @@ def main():
 
     if not final_file_text:
         raise ValueError("未能从模型输出中提取【目标文件内容】部分，请检查 prompt 或模型返回内容。")
+
+    final_file_text = normalize_generated_os_text(final_file_text)
 
     output_dir = project_root / settings["paths"]["output_dir"]
     output_dir.mkdir(parents=True, exist_ok=True)

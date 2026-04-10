@@ -31,39 +31,39 @@
 
 // Determine the host OS
 #if defined(_WIN32) || defined(_WIN64) /* _WIN64 for NVRTC */
-#  define _ACCL_OS_WINDOWS_() 1
+#define _ACCL_OS_WINDOWS_() 1
 #else
-#  define _ACCL_OS_WINDOWS_() 0
+#define _ACCL_OS_WINDOWS_() 0
 #endif
 
 #if defined(__linux__) || defined(__LP64__) /* __LP64__ for NVRTC */
-#  define _ACCL_OS_LINUX_() 1
+#define _ACCL_OS_LINUX_() 1
 #else
-#  define _ACCL_OS_LINUX_() 0
+#define _ACCL_OS_LINUX_() 0
 #endif
 
 #if defined(__ANDROID__)
-#  define _ACCL_OS_ANDROID_() 1
+#define _ACCL_OS_ANDROID_() 1
 #else
-#  define _ACCL_OS_ANDROID_() 0
+#define _ACCL_OS_ANDROID_() 0
 #endif
 
 #if defined(__QNX__) || defined(__QNXNTO__)
-#  define _ACCL_OS_QNX_() 1
+#define _ACCL_OS_QNX_() 1
 #else
-#  define _ACCL_OS_QNX_() 0
+#define _ACCL_OS_QNX_() 0
 #endif
 
 #if defined(__APPLE__) || defined(__APPLE_CC__)
-#  define _ACCL_OS_APPLE_() 1
+#define _ACCL_OS_APPLE_() 1
 #else
-#  define _ACCL_OS_APPLE_() 0
+#define _ACCL_OS_APPLE_() 0
 #endif
 
 #if defined(__OHOS__) || defined(__OPENHARMONY__)
-#  define _ACCL_OS_HARMONY_() 1
+#define _ACCL_OS_HARMONY_() 1
 #else
-#  define _ACCL_OS_HARMONY_() 0
+#define _ACCL_OS_HARMONY_() 0
 #endif
 
 #define _ACCL_OS(...) _ACCL_OS_##__VA_ARGS__##_()

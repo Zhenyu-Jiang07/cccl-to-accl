@@ -9,12 +9,11 @@ paths:
   target_relpath: libascendcxx/include/ascend/std/__accl/os.h
   output_dir: outputs
 
-build:
-  mode: host
+repo_verify:
   conda_env: asc_cccl_env
-  workdir: libascendcxx
-  setup_script: 000_set_env.sh
-  build_script: 002_only_make_host.sh
+  branch_prefix: feature/ai
+  push_remote: origin
+  commit_message_template: "add {filename}"
 
 retry:
   max_fix_rounds: 1

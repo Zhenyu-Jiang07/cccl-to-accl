@@ -32,39 +32,39 @@
 
 // Determine the host OS
 #if defined(_WIN32) || defined(_WIN64) /* _WIN64 for NVRTC */
-#  define _ACCL_OS_WINDOWS_() 1
+#define _ACCL_OS_WINDOWS_() 1
 #else
-#  define _ACCL_OS_WINDOWS_() 0
+#define _ACCL_OS_WINDOWS_() 0
 #endif
 
 #if defined(__linux__) || defined(__LP64__) /* __LP64__ for NVRTC */
-#  define _ACCL_OS_LINUX_() 1
+#define _ACCL_OS_LINUX_() 1
 #else
-#  define _ACCL_OS_LINUX_() 0
+#define _ACCL_OS_LINUX_() 0
 #endif
 
 #if defined(__ANDROID__)
-#  define _ACCL_OS_ANDROID_() 1
+#define _ACCL_OS_ANDROID_() 1
 #else
-#  define _ACCL_OS_ANDROID_() 0
+#define _ACCL_OS_ANDROID_() 0
 #endif
 
 #if defined(__QNX__) || defined(__QNXNTO__)
-#  define _ACCL_OS_QNX_() 1
+#define _ACCL_OS_QNX_() 1
 #else
-#  define _ACCL_OS_QNX_() 0
+#define _ACCL_OS_QNX_() 0
 #endif
 
 #if defined(__APPLE__) || defined(__APPLE_CC__)
-#  define _ACCL_OS_APPLE_() 1
+#define _ACCL_OS_APPLE_() 1
 #else
-#  define _ACCL_OS_APPLE_() 0
+#define _ACCL_OS_APPLE_() 0
 #endif
 
 #if defined(__OHOS__) || defined(__OPENHARMONY__)
-#  define _ACCL_OS_HARMONY_() 1
+#define _ACCL_OS_HARMONY_() 1
 #else
-#  define _ACCL_OS_HARMONY_() 0
+#define _ACCL_OS_HARMONY_() 0
 #endif
 
 #define _ACCL_OS(...) _ACCL_OS_##__VA_ARGS__##_()
@@ -72,7 +72,7 @@
 #endif  // LIBASCENDCXX_INCLUDE_ASCEND_STD___ACCL_OS_H_
 
 【改写说明】
-1. 修正了注释描述：将参考文件中从原始文件错误继承的 "host architecture" 修正为 "host OS"，因为该文件实际功能是判断操作系统而非架构。
-2. 修正了头文件保护符：参考文件结尾的 `#endif` 注释中少了一个下划线（`STD__ACCL` vs `STD___ACCL`），已修正为与开头 `#ifndef` 保持一致。
-3. 调整了宏定义顺序：保持与候选文件一致的逻辑顺序，将新增的 `_ACCL_OS_HARMONY` 放置在最后，符合扩展习惯，同时保留了原始文件中的缩进风格。
-4. 保留了 ACCL 风格的版权声明和 `_ACCL_` 前缀命名规范。
+1. **修正注释语义**：原始文件和参考文件中的注释写的是 "determine the host architecture"（确定主机架构），但宏定义内容实际是操作系统（OS）判断。已将注释修正为 "determine the host OS" 以符合代码实际语义。
+2. **修正头文件保护符**：参考文件中的 `#endif` 注释缺少一个下划线（`_ACCL` vs `__ACCL`），与 `#ifndef` 定义不匹配。已修正为与候选文件一致的 `LIBASCENDCXX_INCLUDE_ASCEND_STD___ACCL_OS_H_`，确保头文件保护符前后一致。
+3. **保留关键扩展**：保留了候选文件中新增的 `_ACCL_OS_HARMONY` 宏定义，这是适配华为昇腾/鸿蒙环境的关键迁移内容。
+4. **代码风格统一**：统一了宏定义的缩进格式，保持代码风格整洁一致。
